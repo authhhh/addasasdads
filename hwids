@@ -1,3 +1,1196 @@
-return {
-"73E043FE-9C67-4E71-844C-CD6140E441B3"
+local active = false
+local trueActive = true
+local reachType = "Sphere"
+local dmgEnabled = false
+local visualizerEnabled = false
+
+local plr = game.Players.LocalPlayer
+
+local function onHit(hit,handle)
+	local victim = hit.Parent:FindFirstChildOfClass("Humanoid")
+	if victim and victim.Parent.Name ~= game.Players.LocalPlayer.Name then
+		if dmgEnabled then
+			for _,v in pairs(hit.Parent:GetChildren()) do
+				if v:IsA("Part") then
+					firetouchinterest(v,handle,0)
+					firetouchinterest(v,handle,1)
+				end
+			end
+		else
+			firetouchinterest(hit,handle,0)
+			firetouchinterest(hit,handle,1)
+		end
+	end
+end
+
+local function getWhiteList()
+	local wl = {}
+	for _,v in pairs(game.Players:GetPlayers()) do
+		if v ~= plr then
+			local char = v.Character
+			if char then
+				for _,q in pairs(char:GetChildren()) do
+					if q:IsA("Part") then
+						table.insert(wl,q)
+					end
+				end
+			end
+		end
+	end
+	return wl
+end
+
+game:GetService("RunService").RenderStepped:connect(function()
+	pcall(function()
+		if not active or not trueActive then return end
+		local s = plr.Character and plr.Character:FindFirstChildOfClass("Tool")
+		if s then
+			local handle = s:FindFirstChild("Handle").Part
+			if handle then
+				local reach = 1000
+				if reach then
+					if reachType == "Sphere" then
+						for _,v in pairs(game.Players:GetPlayers()) do
+							local hrp = v.Character and v.Character:FindFirstChild("HumanoidRootPart")
+							if hrp and handle then
+								local mag = (hrp.Position-handle.Position).magnitude
+								if mag <= reach then
+									onHit(hrp,handle)
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end)
+end)
+
+
+
+
+
+
+-- LocalScript inside StarterPlayerScripts
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local MAX_RANGEE = 10 -- Define the maximum range for selection boxes
+local selectionBoxesEnabled = false -- Variable to control the selection boxes visibility
+local selectionBoxColor = Color3.new(1, 1, 1) -- Red color for selection boxes
+local selectionBoxes = {} -- Table to store all selection boxes
+
+-- Function to add a selection box to a player's character
+local function addSelectionBoxToCharacter(character)
+    if character and character:IsA("Model") and not selectionBoxes[character] then
+        local selectionBox = Instance.new("SelectionBox")
+        selectionBox.Adornee = character
+        selectionBox.Parent = character
+        selectionBox.LineThickness = 0.01 -- Optional: Adjust line thickness
+        selectionBox.SurfaceTransparency = 1 -- Optional: Adjust transparency
+        selectionBox.Color3 = selectionBoxColor
+        selectionBoxes[character] = selectionBox
+    end
+end
+
+-- Function to remove a selection box from a player's character
+local function removeSelectionBoxFromCharacter(character)
+    if selectionBoxes[character] then
+        selectionBoxes[character]:Destroy()
+        selectionBoxes[character] = nil
+    end
+end
+
+-- Function to update selection boxes based on distance
+local function updateSelectionBoxes()
+    if not selectionBoxesEnabled then
+        for character, _ in pairs(selectionBoxes) do
+            removeSelectionBoxFromCharacter(character)
+        end
+        return
+    end
+
+    local localCharacter = LocalPlayer.Character
+    if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") then
+        local localRootPart = localCharacter.HumanoidRootPart
+
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local rootPart = player.Character.HumanoidRootPart
+                local distance = (rootPart.Position - localRootPart.Position).Magnitude
+
+                if distance <= MAX_RANGEE then
+                    addSelectionBoxToCharacter(player.Character)
+                else
+                    removeSelectionBoxFromCharacter(player.Character)
+                end
+            end
+        end
+    end
+end
+
+-- Function to handle new players joining the game
+local function onPlayerAdded(player)
+    -- Wait for the player's character to load
+    player.CharacterAdded:Connect(function(character)
+        updateSelectionBoxes()
+    end)
+
+    -- Add or update selection boxes if the player's character is already loaded
+    if player.Character then
+        updateSelectionBoxes()
+    end
+end
+
+-- Add selection boxes to all existing players
+for _, player in ipairs(Players:GetPlayers()) do
+    onPlayerAdded(player)
+end
+
+-- Connect the onPlayerAdded function to the PlayerAdded event
+Players.PlayerAdded:Connect(onPlayerAdded)
+
+-- Update selection boxes every frame
+RunService.RenderStepped:Connect(updateSelectionBoxes)
+
+
+
+
+Players = game:GetService("Players")
+Player = Players.LocalPlayer
+
+getgenv().Jitter = false
+local Jit = math.random(30, 90)
+local Angle = 60
+game:GetService("RunService").Heartbeat:Connect(
+    function()
+        if Jitter == true then
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame =
+                CFrame.new(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame.Position) *
+                CFrame.Angles(0, math.rad(Angle) + math.rad((math.random(1, 2) == 1 and Jit or -Jit)), 0)
+        end
+    end)
+    Player.CharacterAdded:Connect(function()
+        -- Re-do Settings --
+        Elysium:getSword() -- wait for sword
+        wait(.25)
+        for i,v in pairs(Elysium:getSword():GetDescendants()) do
+            if v:FindFirstChildOfClass("TouchTransmitter") then
+                v.Massless = true
+            end
+        end
+        task.spawn(function()
+            if Elysium.isReach == true then
+                Elysium:doReach()
+            end
+        end)
+        task.spawn(function()
+            if Elysium.selBox == true then
+                Elysium:doSelBox()
+            end
+        end)
+        task.spawn(function()
+            if Elysium.Spin then
+                if not Player.Character:FindFirstChild("HumanoidRootPart"):FindFirstChildOfClass("BodyAngularVelocity") then
+                    local Velocity = Instance.new("BodyAngularVelocity", Player.Character:FindFirstChild("HumanoidRootPart"))
+                    Velocity.AngularVelocity = Vector3.new(0,75,0)
+                    Velocity.MaxTorque = Vector3.new(0,9e9,0)
+                    Velocity.P = 1250
+                end
+            end
+        end)
+    end)
+
+    local TELEPORT_KEY = Enum.KeyCode.Q
+    local TELEPORT_DISTANCE = 30
+    local Y_LEVEL_OFFSET = 6
+    local VOID_Y_THRESHOLD = -6
+    
+    -- Services
+    local Players = game:GetService("Players")
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+    
+    -- Variables to track following state
+    local isFollowing = false
+    local followingPlayer = nil
+    local surfacePosition = nil  -- Store the surface position
+    local followConnections = {} -- Store event connections for cleanup
+    
+    -- Function to calculate distance between two points
+    local function distance(point1, point2)
+        return (point1 - point2).magnitude
+    end
+    
+    -- Function to teleport to a position
+    local function teleportToPosition(position)
+        local myCharacter = Players.LocalPlayer.Character
+        if myCharacter then
+            local myRootPart = myCharacter:FindFirstChild("HumanoidRootPart")
+            if myRootPart then
+                myRootPart.CFrame = CFrame.new(position)
+            end
+        end
+    end
+    
+    -- Function to teleport to a player's position
+    local function teleportToPlayer(player)
+        if not player then
+            local cam = workspace.CurrentCamera
+            local plr = game.Players.LocalPlayer
+            if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+                cam.CameraSubject = plr.Character.Humanoid
+            end
+            return
+        end
+    
+        local character = player.Character
+        if character then
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then
+                -- Calculate the position slightly below the player
+                local targetPosition = rootPart.Position - Vector3.new(0, Y_LEVEL_OFFSET, 0)
+                teleportToPosition(targetPosition)
+            end
+        end
+    end
+    
+    -- Function to find nearest player
+    local function findNearestPlayer()
+        local myCharacter = Players.LocalPlayer.Character
+        if not myCharacter then
+            return nil
+        end
+        
+        local myPosition = myCharacter:WaitForChild("HumanoidRootPart").Position
+        local nearestPlayer = nil
+        local minDistance = TELEPORT_DISTANCE + 1
+        
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= Players.LocalPlayer then
+                local character = player.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    local playerPosition = character.HumanoidRootPart.Position
+                    local dist = distance(myPosition, playerPosition)
+                    if dist <= TELEPORT_DISTANCE and dist < minDistance then
+                        minDistance = dist
+                        nearestPlayer = player
+                    end
+                end
+            end
+        end
+        
+        return nearestPlayer
+    end
+    
+    -- Function to clean up connections
+    local function cleanupConnections()
+        for _, conn in ipairs(followConnections) do
+            conn:Disconnect()
+        end
+        followConnections = {}
+    end
+    
+    -- Function to reset following state
+    local function resetFollowing()
+        isFollowing = false
+        followingPlayer = nil
+    
+        local cam = workspace.CurrentCamera
+        local plr = game.Players.LocalPlayer
+        if plr.Character and plr.Character:FindFirstChild("Humanoid") then
+            cam.CameraSubject = plr.Character.Humanoid
+        end
+        
+        -- Cleanup connections
+        cleanupConnections()
+    end
+    
+    -- Function to toggle following or spectating a player
+    local function toggleFollowPlayer(player)
+        if isFollowing then
+            resetFollowing()
+        else
+            -- Enable following or spectating
+            isFollowing = true
+            followingPlayer = player
+            
+            -- Store current surface position
+            local myCharacter = Players.LocalPlayer.Character
+            local myRootPart = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+            if myRootPart then
+                surfacePosition = myRootPart.Position
+            end
+            
+            -- Cleanup any existing connections
+            cleanupConnections()
+    
+            -- Subscribe to player events
+            if followingPlayer then
+                local humanoid = followingPlayer.Character and followingPlayer.Character:FindFirstChild("Humanoid")
+                if humanoid then
+                    table.insert(followConnections, humanoid.HealthChanged:Connect(function(health)
+                        if health <= 1 then
+                            resetFollowing()
+                        end
+                    end))
+                end
+    
+                table.insert(followConnections, followingPlayer.CharacterAdded:Connect(function(character)
+                    if isFollowing and followingPlayer == player then
+                        teleportToPlayer(player)
+                        local humanoid = character:FindFirstChild("Humanoid")
+                        if humanoid then
+                            table.insert(followConnections, humanoid.HealthChanged:Connect(function(health)
+                                if health <= 1 then
+                                    resetFollowing()
+                                end
+                            end))
+                        end
+                    end
+                end))
+                
+                table.insert(followConnections, followingPlayer.CharacterRemoving:Connect(function()
+                    resetFollowing()
+                end))
+            end
+            
+            local cam = workspace.CurrentCamera
+            if player.Character and player.Character:FindFirstChild("Humanoid") then
+                cam.CameraSubject = player.Character.Humanoid
+            end
+        end
+    end
+    
+    -- Function to continuously update following
+    RunService.Stepped:Connect(function()
+        if isFollowing and followingPlayer then
+            teleportToPlayer(followingPlayer)
+        end
+    
+        -- Prevent falling into the void
+        local myCharacter = Players.LocalPlayer.Character
+        if myCharacter then
+            local myRootPart = myCharacter:FindFirstChild("HumanoidRootPart")
+            if myRootPart and myRootPart.Position.Y < VOID_Y_THRESHOLD then
+                if surfacePosition then
+                    teleportToPosition(surfacePosition)
+                else
+                    teleportToPosition(Vector3.new(0, 50, 0))  -- Default safe position
+                end
+            end
+        end
+    end)
+    
+    -- Handle character health change event for the local player
+    local function onHealthChanged(health)
+        if health <= 1 then
+            resetFollowing()
+        end
+    end
+    
+    local function setupHealthMonitor()
+        local myCharacter = Players.LocalPlayer.Character
+        if myCharacter then
+            local humanoid = myCharacter:WaitForChild("Humanoid")
+            humanoid.HealthChanged:Connect(onHealthChanged)
+        end
+    end
+    
+    -- Initialize health monitor
+    setupHealthMonitor()
+    
+    -- Handle character death event
+    Players.LocalPlayer.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.Died:Connect(function()
+            resetFollowing()
+        end)
+        setupHealthMonitor()  -- Reinitialize health monitor for new character
+    end)
+    
+    -- Handle target player character events
+    local function handlePlayerEvents(player)
+        player.CharacterAdded:Connect(function(character)
+            if isFollowing and followingPlayer == player then
+                teleportToPlayer(player)
+            end
+        end)
+        
+        player.CharacterRemoving:Connect(function()
+            if isFollowing and followingPlayer == player then
+                resetFollowing()
+            end
+        end)
+    end
+    
+    Players.PlayerAdded:Connect(function(player)
+        handlePlayerEvents(player)
+    end)
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        handlePlayerEvents(player)
+    end
+    
+    -- Detect key press to toggle following
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == TELEPORT_KEY then
+            -- Check if nearest player exists before toggling follow
+            local nearestPlayer = findNearestPlayer()
+            if nearestPlayer then
+                toggleFollowPlayer(nearestPlayer)
+            end
+        end
+    end)
+
+
+
+Elysium = {
+    
+    isReach = false,
+    curReach = "Spoof",
+    damageAmp = false,
+    reachMagnitude = Vector3.new(1, 0.800000011920929, 4),
+    reachType = "Box",
+    selBox = false,
+    selBoxColor = Color3.fromRGB(0,0,0),
+
+    cWalkspeed = 16,
+    cJumppower = 50,
+    cWalking = false,
+    CFSpeed = 1.35,
+
+    Autoclick = false,
+    Spin = false,
+
+    supportedExecutor = true
 }
+
+_hookmetamethod = false
+_getconnections = false
+function Elysium:authenticateFunctions()
+    if not hookmetamethod and not getconnections then
+        Elysium.supportedExecutor = true
+    end
+    hookmetamethod(game, "__index", function(a,b)
+        _hookmetamethod = true
+    end)
+    for i,v in pairs(getconnections("Size")) do
+        _getconnections = true
+    end
+    if _hookmetamethod and _getconnections then
+        Elysium.supportedExecutor = true
+    else
+        Elysium.supportedExecutor = false
+    end
+end
+function Elysium:Interpolate(part, targetCFrame, duration)
+    return coroutine.wrap(function()
+        local startTime = tick()
+        local startCFrame = part.CFrame
+        while tick() - startTime < duration do
+            local elapsedTime = tick() - startTime
+            local t = elapsedTime / duration
+            local lerpedCFrame = startCFrame:Lerp(targetCFrame, t)
+            local slerpedCFrame = CFrame.new(
+                lerpedCFrame.Position,
+                targetCFrame.Position
+            ):lerp(lerpedCFrame, math.sin(t * math.pi * 0.5))
+
+            part.CFrame = slerpedCFrame
+            game:GetService("RunService").Heartbeat:Wait()
+        end
+        part.CFrame = targetCFrame
+    end)
+end
+function Elysium:WaitForChildOfClass(parents, className, timeout)
+    local startTime = tick()
+    timeout = timeout or 9e9
+    while tick() - startTime < timeout do
+        for _, parent in pairs(parents) do
+            for _, child in pairs(parent:GetChildren()) do
+                if child:IsA(className) then
+                    return child
+                end
+            end
+        end
+        wait(0.01)
+    end
+    return nil
+end
+function Elysium:Spoof(Instance, Property, Value)
+    if Elysium.supportedExecutor then
+        local b
+        b = hookmetamethod(game, "__index", function(A, B)
+            if not checkcaller() then
+                if A == Instance then
+                    local filter = string.gsub(tostring(B), "\0", "")
+                    if filter == Property then
+                        return Value
+                    end
+                end
+            end
+            return b(A, B)
+        end)
+    else
+        
+    end
+end
+function Elysium:disableConnection(Connection)
+    if Elysium.supportedExecutor then
+        for i, v in pairs(getconnections(Connection)) do
+            v:Disable()
+        end
+    else
+
+    end
+end
+function Elysium:getSword()
+    return Elysium:WaitForChildOfClass({Player.Character, Player.Backpack}, "Tool")
+end
+function Elysium:getHitbox()
+    for i,v in pairs(Elysium:getSword():GetDescendants()) do
+        if v:FindFirstChildOfClass("TouchTransmitter") then
+            v.Massless = true
+            return v
+        end
+    end
+end
+function Elysium:doReach()
+    Elysium:getSword()
+    Elysium:disableConnection(Elysium:getHitbox():GetPropertyChangedSignal("Size"))
+    Elysium:Spoof(Elysium:getHitbox(), "Size", Vector3.new(1, 0.800000011920929, 4))
+    Elysium.isReach = true
+    damageAmplification = Elysium:getHitbox().Touched:Connect(function(part)
+        if Elysium.isReach == true and Elysium.damageAmp == true and part.Parent:FindFirstChildOfClass("Humanoid") then
+            local victimCharacter = part.Parent
+            for i,v in pairs(victimCharacter:GetChildren()) do
+                if v:IsA("Part") and victimCharacter.Humanoid.Health ~= 0 and victimCharacter.Humanoid.Health > 0 and victimCharacter.Name ~= Player.Name then
+                    task.spawn(function()
+                        firetouchinterest(v, Elysium:getHitbox(), 0)
+                        wait();
+                        firetouchinterest(v, Elysium:getHitbox(), 1)
+                    end)
+                end
+            end
+        end
+    end)
+    while Elysium.isReach == true do
+        Elysium:getHitbox().Size = Elysium.reachMagnitude
+        wait()
+    end
+end
+function Elysium:undoReach()
+    Elysium:disableConnection(Elysium:getHitbox():GetPropertyChangedSignal("Size"))
+    Elysium:Spoof(Elysium:getHitbox(), "Size", Vector3.new(1, 0.800000011920929, 4))
+    Elysium.isReach = false
+    if Elysium:getHitbox() then
+        Elysium:getHitbox().Size = Vector3.new(1, 0.800000011920929, 4)
+    end
+    if damageAmplification then
+        damageAmplification:Disconnect()
+    end
+end
+function Elysium:doSelBox()
+    if not Elysium:getHitbox():FindFirstChildOfClass("SelectionBox") then
+        Elysium.selBox = true
+        local Box = Instance.new("SelectionBox", Elysium:getHitbox())
+        Box.Adornee = Elysium:getHitbox()
+        Box.LineThickness = 0.01
+        while Elysium.selBox == true do
+            Box.Color3 = Elysium.selBoxColor
+            wait()
+        end
+    end
+end
+function Elysium:undoSelBox()
+    if Elysium:getHitbox() and Elysium:getHitbox():FindFirstChildOfClass("SelectionBox") then
+        Elysium.selBox = false
+        wait(.15)
+        Elysium:getHitbox():FindFirstChildOfClass("SelectionBox"):Destroy()
+    end
+end
+function Elysium:Patch() -- Unused & Detected function
+    local Seat = Instance.new("Seat")
+    Elysium:Spoof(Seat, "Parent", nil)
+    local Weld = Instance.new("Weld")
+    Elysium:Spoof(Weld, "Parent", nil)
+    Seat.Transparency = 1
+    Seat.CanCollide = false
+    wait(.2);
+    Player.Character["HumanoidRootPart"].Anchored = true
+    Seat.Parent = workspace
+    Seat.CFrame = Player.Character["HumanoidRootPart"].CFrame
+    Seat.Anchored = false
+    Weld.Parent = Seat
+    Weld.Part0 = Seat
+    Weld.Part1 = Player.Character["HumanoidRootPart"]
+    Player.Character["HumanoidRootPart"].Anchored = false
+    Seat.CFrame = Player.Character["HumanoidRootPart"].CFrame
+end
+
+
+-- Snag the ui loader function thingy (loadstring the link, but dont call it)
+local uiLoader = loadstring(game:HttpGet('https://raw.githubusercontent.com/topitbopit/dollarware/main/library.lua'))
+-- Because of the way the library loads, settings are handled on the loadstring call
+local ui = uiLoader({
+    rounding = false, -- Whether certain features get rounded 
+    theme = 'cherry', -- The theme. Available themes are: cherry, orange, lemon, lime, raspberry, blueberry, grape, watermelon
+    smoothDragging = false -- Smooth dragging
+})
+
+ui.autoDisableToggles = true -- All toggles will automatically be disabled when the ui is destroyed (window is closed)
+-- so you don't have to manually handle everything. This defaults to true!
+
+
+
+-- Make a window, which houses all the stuff for the gui
+-- Technically multiple windows can be made, but there is no (and likely wont ever be) official support for them
+-- since its a lot of work for such a minute use
+local window = ui.newWindow({
+    text = 'Elysium', -- Title of window 
+    resize = true, -- Ability to resize
+    size = Vector2.new(550, 376), -- Window size, accepts UDim2s and Vector2s
+    position = nil -- Custom position, defaults to roughly the bottom right corner
+})
+
+local menu = window:addMenu({
+    text = 'Combat' -- Title of menu
+})
+do 
+    -- Menus have sections which house all the controls    
+    local section = menu:addSection({
+        text = 'section 1', -- Title of section
+        side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+        showMinButton = true, -- Ability to minimize this section. Defaults to true
+    })
+    
+    do 
+        section:addLabel({
+            text = 'text' -- Self explanatory
+        })
+        
+        local toggle = section:addToggle({
+            text = 'Reach', 
+            state = false -- Starting state of the toggle - doesn't automatically call the callback
+        })
+        
+        toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+            if value == true then
+                Elysium:doReach()
+                Elysium.isReach = true
+            elseif value == false then
+                Elysium:undoReach()
+                Elysium.isReach = false
+            end
+        end)
+
+        
+
+        local toggle = section:addToggle({
+            text = 'SelectionBox', 
+            state = false -- Starting state of the toggle - doesn't automatically call the callback
+        })
+        
+        toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+            if value == true then
+                Elysium:doSelBox()
+                Elysium.selBox = true
+            elseif value == false then
+                Elysium:undoSelBox()
+                Elysium.selBox = false
+            end
+        end)
+
+        local toggle = section:addToggle({
+            text = 'ReachV2', 
+            state = false -- Starting state of the toggle - doesn't automatically call the callback
+        })
+        
+        toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+            active = value
+        end)
+
+        local toggle = section:addToggle({
+            text = 'Damage Amplifier', 
+            state = false -- Starting state of the toggle - doesn't automatically call the callback
+        })
+        
+        toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+            dmgEnabled = value
+        end)
+
+        local toggle = section:addToggle({
+            text = 'Reach (CBRING)', 
+            state = false -- Starting state of the toggle - doesn't automatically call the callback
+        })
+        
+        toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+           _G.ReachV2 = (value)
+        end)
+        
+        
+        section:addButton({
+            text = 'button (small)', 
+            style = 'small' -- style of the button, can be 'large' or 'small'
+        }):bindToEvent('onClick', function() -- Call a function when clicked
+            ui.notify({
+                title = 'button',
+                message = 'The button got clicked!',
+                duration = 3
+            })
+        end)
+        
+        section:addButton({
+            text = 'button (large)', 
+            style = 'large' -- style of the button, can be 'large' or 'small'
+        }, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+            ui.notify({
+                title = 'button',
+                message = 'The large button got clicked!',
+                duration = 3
+            })
+        end):setTooltip('this is a large button')
+        
+        local hotkey = section:addHotkey({
+            text = 'hotkey'
+        })
+        hotkey:setHotkey(Enum.KeyCode.G)
+        hotkey:setTooltip('This is a hotkey linked to the toggle!')
+        hotkey:linkToControl(toggle)
+    end
+    
+    local section = menu:addSection({
+        text = 'section 2',
+        side = 'right',
+        showMinButton = false
+    })
+    do 
+        section:addSlider({
+            text = 'Magnitude',
+            min = 1,
+            max = 150,
+            step = 0.01,
+            val = 50
+        }, function(text) 
+            if Elysium.reachType == "Box" then
+                Elysium.reachMagnitude = Vector3.new(tonumber(text), tonumber(text), tonumber(text))
+            elseif Elysium.reachType == "Linear" then
+                Elysium.reachMagnitude = Vector3.new(1, 0.800000011920929, tonumber(text))
+            elseif Elysium.reachType == "Wide" then
+                Elysium.reachMagnitude = Vector3.new(tonumber(text) * .3, tonumber(text) * .3, tonumber(text))
+            end
+        end):setTooltip('Reach Slider')
+
+        section:addSlider({
+            text = 'Magnitude',
+            min = 1,
+            max = 150,
+            step = 0.01,
+            val = 50
+        }, function(text) 
+            _G.ReachSlide = (text)
+        end):setTooltip("Cbring Slider")
+        
+        section:addColorPicker({
+            text = 'color picker',
+            color = Color3.fromRGB(255, 0, 0)
+        }, function(newColor) 
+            print(newColor)
+        end)
+        
+        section:addTextbox({
+            text = 'magnitude'
+        }):bindToEvent('onFocusLost', function(text) 
+            if Elysium.reachType == "Box" then
+                Elysium.reachMagnitude = Vector3.new(tonumber(text), tonumber(text), tonumber(text))
+            elseif Elysium.reachType == "Linear" then
+                Elysium.reachMagnitude = Vector3.new(1, 0.800000011920929, tonumber(text))
+            elseif Elysium.reachType == "Wide" then
+                Elysium.reachMagnitude = Vector3.new(tonumber(text) * .3, tonumber(text) * .3, tonumber(text))
+            end
+        end)
+    end
+    
+end
+
+local AntiAim = window:addMenu({
+    text = 'AntiAim' -- Title of menu
+})
+
+local AntiAimSection = AntiAim:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+local toggle = AntiAimSection:addToggle({
+    text = 'Spin', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+    if value == true then
+		Elysium.Spin = true
+        if not Player.Character:FindFirstChild("HumanoidRootPart"):FindFirstChildOfClass("BodyAngularVelocity") then
+            local Velocity = Instance.new("BodyAngularVelocity", Player.Character:FindFirstChild("HumanoidRootPart"))
+            Velocity.AngularVelocity = Vector3.new(0,75,0)
+            Velocity.MaxTorque = Vector3.new(0,9e9,0)
+            Velocity.P = 1250
+        end
+	elseif value == false then
+		Elysium.Spin = false
+        if Player.Character:FindFirstChild("HumanoidRootPart"):FindFirstChildOfClass("BodyAngularVelocity") then
+            Player.Character:FindFirstChild("HumanoidRootPart"):FindFirstChildOfClass("BodyAngularVelocity"):Destroy()
+        end
+	end
+end)
+
+local toggle = AntiAimSection:addToggle({
+    text = 'Jitter', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+   getgenv().Jitter = (value)
+end)
+
+AntiAimSection:addButton({
+    text = 'desync (X)', 
+    style = 'large' -- style of the button, can be 'large' or 'small'
+}, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+    local P1000ToggleKey = "x" -- Change that to whatever keybind: "t"
+
+
+--[[
+
+	Standing still will trick the hitbox, you won't be able to get hit.
+
+
+	DO NOT EDIT BEYOND THIS POINT IF YOU DON'T UNDERSTAND WHAT IS GOING ON.
+	
+	ORIGINAL SOURCE PUT INTO SKID FRIENDLY FORMAT TAKE WHAT YOU LIKE AND MAKE MANY MORE OBLIVITIES CLONES WITH THIS OR EVEN YOUR VERY OWN DIY OBLIVITY!
+	
+	AND REMEMBER TO SAY, SO LOOOOONG OBLIVITYYYYYY!!!
+
+
+--]]
+
+
+--// Services
+checkcaller = checkcaller
+newcclosure = newcclosure
+hookmetamethod = hookmetamethod
+
+local PastedSources = false
+local BruhXD = game:GetService("RunService")
+local LocalPlayer = game:GetService("Players").LocalPlayer
+local Bullshit = LocalPlayer:GetMouse()
+
+
+--// Toggles
+Bullshit.KeyDown:Connect(function(SayNoToOblivity)
+	if SayNoToOblivity == string.lower(P1000ToggleKey) then
+		pcall(function()
+			if PastedSources == false then
+				PastedSources = true
+				print("desync on")
+			elseif PastedSources == true then
+				PastedSources = false
+				print("desync off")
+			end
+		end)
+	end
+end)
+
+Bullshit.KeyDown:Connect(function(SayNoToOblivity)
+	if SayNoToOblivity == ("=") then
+		game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer) 
+	end
+end)
+
+
+--// Desync_Source
+function RandomNumberRange(a)
+	return math.random(-a * 100, a * 100) / 100
+end
+
+function RandomVectorRange(a, b, c)
+	return Vector3.new(RandomNumberRange(a), RandomNumberRange(b), RandomNumberRange(c))
+end
+
+
+local DesyncTypes = {}
+BruhXD.Heartbeat:Connect(function()
+	if PastedSources == true then
+		DesyncTypes[1] = LocalPlayer.Character.HumanoidRootPart.CFrame
+		DesyncTypes[2] = LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity
+
+		local SpoofThis = LocalPlayer.Character.HumanoidRootPart.CFrame
+
+		SpoofThis = SpoofThis * CFrame.new(Vector3.new(0, 0, 0))
+		SpoofThis = SpoofThis * CFrame.Angles(math.rad(RandomNumberRange(180)), math.rad(RandomNumberRange(180)), math.rad(RandomNumberRange(180)))
+
+		LocalPlayer.Character.HumanoidRootPart.CFrame = SpoofThis
+
+		LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(1, 1, 1) * 16384
+
+		BruhXD.RenderStepped:Wait()
+
+		LocalPlayer.Character.HumanoidRootPart.CFrame = DesyncTypes[1]
+		LocalPlayer.Character.HumanoidRootPart.AssemblyLinearVelocity = DesyncTypes[2]
+	end
+end)
+
+
+--// Hook_CFrame
+local XDDDDDD = nil
+XDDDDDD = hookmetamethod(game, "__index", newcclosure(function(self, key)
+	if PastedSources == true then
+		if not checkcaller() then
+			if key == "CFrame" and PastedSources == true and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("Humanoid").Health > 0 then
+				if self == LocalPlayer.Character.HumanoidRootPart then
+					return DesyncTypes[1] or CFrame.new()
+				elseif self == LocalPlayer.Character.Head then
+					return DesyncTypes[1] and DesyncTypes[1] + Vector3.new(0, LocalPlayer.Character.HumanoidRootPart.Size / 2 + 0.5, 0) or CFrame.new()
+				end
+			end
+		end
+	end
+	return XDDDDDD(self, key)
+end))
+end):setTooltip('this is a large button')
+
+local vulns = window:addMenu({
+    text = 'vulns' -- Title of menu
+})
+
+local vulnsSection = vulns:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+vulnsSection:addButton({
+    text = 'Disable Stud Webhook', 
+    style = 'large' -- style of the button, can be 'large' or 'small'
+}, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+    local eventbypass
+
+    eventbypass = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+    
+        if not checkcaller() and self.Name == "StudLog" and method == "FireServer" then
+            print("Anti Cheat remote was called and blocked.")
+            return wait(9e9); -- do nothing if called
+        end
+    
+        return eventbypass(self, ...)
+    end)
+end):setTooltip('this is a large button')
+
+vulnsSection:addButton({
+    text = 'Small AntiCheat Disabler', 
+    style = 'large' -- style of the button, can be 'large' or 'small'
+}, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+    local eventbypass
+
+    eventbypass = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+    
+        if not checkcaller() and self.Name == "Policy" and method == "FireServer" then
+            print("Anti Cheat remote was called and blocked.")
+            return wait(9e9); -- do nothing if called
+        end
+    
+        return eventbypass(self, ...)
+    end)
+end):setTooltip('this is a large button')
+
+vulnsSection:addButton({
+    text = 'Bank Disabler', 
+    style = 'large' -- style of the button, can be 'large' or 'small'
+}, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+    local eventbypass
+
+    eventbypass = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+    
+        if not checkcaller() and self.Name == "BankRemote" and method == "FireServer" then
+            print("BankRemote Blocked")
+            return wait(9e9); -- do nothing if called
+        end
+    
+        return eventbypass(self, ...)
+    end)
+end):setTooltip('this is a large button')
+
+
+local Visuals = window:addMenu({
+    text = 'Visuals' -- Title of menu
+})
+
+local VisualsSection = Visuals:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+local toggle = VisualsSection:addToggle({
+    text = 'Boxes', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+    selectionBoxesEnabled = value
+end)
+
+local VisualsSection = Visuals:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+local toggle = VisualsSection:addToggle({
+    text = 'Tracer', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+    tracersEnabled = value
+end)
+
+
+
+local Others = window:addMenu({
+    text = 'Others' -- Title of menu
+})
+
+local OthersSection = Others:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+local toggle = OthersSection:addToggle({
+    text = 'AutoClicker', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+    if value == true then
+        Elysium.Autoclick = true
+        while Elysium.Autoclick do
+            if Elysium:getSword().Parent == Player.Character then
+                Elysium:getSword():Activate()
+            end
+            wait()
+        end
+    elseif value == false then
+        Elysium.Autoclick = false
+    end
+end)
+
+local toggle = OthersSection:addToggle({
+    text = 'UnderGround(Q)', 
+    state = false -- Starting state of the toggle - doesn't automatically call the callback
+})
+
+toggle:bindToEvent('onToggle', function(value) -- Call a function when toggled
+    toggleScript(value)
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not scriptEnabled then return end
+        if not gameProcessed and input.KeyCode == TELEPORT_KEY then
+            -- Check if nearest player exists before toggling follow
+            local nearestPlayer = findNearestPlayer()
+            if nearestPlayer then
+                toggleFollowPlayer(nearestPlayer)
+            end
+        end
+    end)
+end)
+
+local Movement = window:addMenu({
+    text = 'Movement' -- Title of menu
+})
+
+local MovementSection = Movement:addSection({
+    text = 'section 1', -- Title of section
+    side = 'auto', -- Side of the menu that the section is placed on. Defaults to 'auto', but can be 'left' or 'right'
+    showMinButton = true, -- Ability to minimize this section. Defaults to true
+})
+
+MovementSection:addButton({
+    text = 'Speed', 
+    style = 'large' -- style of the button, can be 'large' or 'small'
+}, function() -- you don't have to always use bindToEvent, just passing a callback normally works fine
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+
+    local Player = Players.LocalPlayer
+    local character = Player.Character or Player.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildWhichIsA("Humanoid")
+
+    local speedwalk = 0.9
+
+
+    local function speed()
+        while humanoid and humanoid.Parent do
+            local deltaTime = RunService.RenderStepped:Wait()
+            if humanoid.MoveDirection.Magnitude > 0 then
+                local moveVector = humanoid.MoveDirection * deltaTime * 10 * speedwalk
+                character:TranslateBy(moveVector)
+            end
+        end
+    end
+
+
+
+
+    -- Start the teleportation function
+    speed()
+end):setTooltip('this is a large button')
+
+
+-- end of code scripts here 
+
+_G.ReachSlide = 0
+_G.ReachV2 = false -- Set this to true if you want to disable the reach lol
+ 
+game:GetService"RunService".Stepped:Connect(function()
+    if _G.ReachV2 == true then  
+    pcall(function()
+      Sword = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Tool").Handle
+        for i,v in pairs(game.Players:GetPlayers()) do 
+            if v ~= game.Players.LocalPlayer and v.Character:FindFirstChild("Left Arm") then
+             if (game.Players.LocalPlayer.Character.Torso.Position - v.Character.Torso.Position).Magnitude <= _G.ReachSlide then
+                   v.Character['Left Arm']:BreakJoints()
+                   v.Character['Left Arm'].Transparency = 1
+                   v.Character['Left Arm'].CanCollide = false
+                   v.Character['Left Arm'].CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(1.5, 0, -2.6)
+                   v.Character['Left Leg']:BreakJoints()
+                   v.Character['Left Leg'].Transparency = 1
+                   v.Character['Left Leg'].CanCollide = false
+                   v.Character['Left Leg'].CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(1.5, 0, -2.6)
+                   v.Character['Right Leg']:BreakJoints()
+                   v.Character['Right Leg'].Transparency = 1
+                   v.Character['Right Leg'].CanCollide = false
+                   v.Character['Right Leg'].CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(1.5, 0, -2.6)
+                   v.Character['Right Arm']:BreakJoints()
+                   v.Character['Right Arm'].Transparency = 1
+                   v.Character['Right Arm'].CanCollide = false
+                   v.Character['Right Arm'].CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(1.5, 0, -2.6)
+                end
+            end
+            end
+            end)
+        end
+end)
+
+
+
